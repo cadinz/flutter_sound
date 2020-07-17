@@ -41,21 +41,10 @@ fi
 #-------------------
 check_actual_flavor()
 {
+	
 	RES=0
-	if grep '^name: flutter_sound_lite$' pubspec.yaml > /dev/null ; then
-		echo "Current flavor is LITE $(tput setaf 2) [OK]$(tput sgr 0)"
-		FLAVOR=LITE
-		return 0
-	elif  grep '^name: flutter_sound$' pubspec.yaml > /dev/null ; then
-		echo "Current flavor is FULL $(tput setaf 2) [OK]$(tput sgr 0)"
-		FLAVOR=FULL
-		return 0
-	else
-		FLAVOR=""
-		echo "Cannot determine your current flavor in file ./pubspec.yaml $(tput setaf 1) [NOK]$(tput sgr 0)"
-		RES=-1
-		return -1
-	fi
+	FLAVOR=LITE
+	return 0
 }
 
 # ------------------------------------------------------------------------------------------------------
