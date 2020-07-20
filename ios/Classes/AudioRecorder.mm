@@ -320,56 +320,6 @@ AudioRecInterface* audioRec;
 }
 
 
-enum AudioSource {
-  defaultSource,
-  microphone,
-  voiceDownlink, // (if someone can explain me what it is, I will be grateful ;-) )
-  camCorder,
-  remote_submix,
-  unprocessed,
-  voice_call,
-  voice_communication,
-  voice_performance,
-  voice_recognition,
-  voiceUpLink,
-  bluetoothHFP,
-  headsetMic,
-  lineIn
-
-};
-
-AVAudioSessionPort tabSessionPort [] =
-{
-        0, // defaultSource
-        AVAudioSessionPortBuiltInMic, // microphone
-        0, // voiceDownLink
-        0, // camcorder
-        0, // remote_submix
-        0, // unprocessed
-        0, //  voice_call,
-        0, //  voice_communication,
-        0, //  voice_performance,
-        0, //  voice_recognition,
-        0, //  voiceUpLink,
-        AVAudioSessionPortBluetoothHFP, //  bluetoothHFP,
-        AVAudioSessionPortHeadsetMic,
-        AVAudioSessionPortLineIn,
-};
-
-
-
-- (void)setAudioFocus: (FlutterMethodCall*)call result: (FlutterResult)result
-{
-        BOOL r = [self setAudioFocus: call ];
-        if (r)
-                result((@"setAudioFocus"));
-        else
-                [FlutterError
-                                errorWithCode:@"Audio Player"
-                                message:@"Open session failure"
-                                details:nil];
-}
-
 
 - (void)startRecorder :(FlutterMethodCall*)call result:(FlutterResult)result
 {
@@ -379,20 +329,6 @@ AVAudioSessionPort tabSessionPort [] =
            //NSNumber* iosQuality = (NSNumber*)call.arguments[@"iosQuality"];
            NSNumber* bitRate = (NSNumber*)call.arguments[@"bitRate"];
            NSNumber* codec = (NSNumber*)call.arguments[@"codec"];
-           int audioSource = [(NSNumber*)call.arguments[@"audioSource"] intValue];
-           
-           AVAudioSession* audioSession = [AVAudioSession sharedInstance];
-           NSArray<AVAudioSessionPortDescription*>* availableInputs = [audioSession availableInputs];
-           bool found = false;
-           for (AVAudioSessionPortDescription* portDescr in availableInputs)
-           {
-                AVAudioSessionPort port = [portDescr portType];
-                if ([port isEqual:tabSessionPort[audioSource]])
-                {
-                        [audioSession setPreferredInput: portDescr error: nil ];
-                        found = true;
-                }
-           }
 
            t_CODEC coder = aacADTS;
            if (![codec isKindOfClass:[NSNull class]])
@@ -426,7 +362,7 @@ AVAudioSessionPort tabSessionPort [] =
                             forKey:AVEncoderBitRateKey];
             }
 
-  /*
+  
           // set volume default to speaker
           UInt32 doChangeDefaultRoute = 1;
           AudioSessionSetProperty(kAudioSessionProperty_OverrideCategoryDefaultToSpeaker, sizeof(doChangeDefaultRoute), &doChangeDefaultRoute);
@@ -439,7 +375,7 @@ AVAudioSessionPort tabSessionPort [] =
                         //audioFileURL = [NSURL fileURLWithPath:[ [self GetDirectoryOfType_FlutterSound: NSCachesDirectory]
                         //stringByAppendingString:defaultExtensions[coder] ]];
           }
-   */
+          
           if(formats[coder] == 0)
           {
                 audioRec = new AudioRecorderEngine(coder, path, audioSettings);

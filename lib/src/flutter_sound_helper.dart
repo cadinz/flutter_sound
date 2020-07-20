@@ -17,7 +17,7 @@
  */
 
 
-import 'package:flutter_sound/flutter_sound.dart';
+import 'package:flutter_sound_lite/flutter_sound.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -86,7 +86,7 @@ class FlutterSoundHelper {
     Map<dynamic, dynamic> info = await FFmpegGetMediaInformation(uri);
     if (info == null) return null;
     int duration = info['duration'] as int;
-    return (duration == null) ? null : Duration(milliseconds: duration);
+    return Duration(milliseconds: duration);
   }
 
   Future<bool> convertFile(

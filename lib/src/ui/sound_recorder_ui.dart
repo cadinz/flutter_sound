@@ -20,7 +20,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_sound/flutter_sound.dart';
+import 'package:flutter_sound_lite/flutter_sound.dart';
 
 //import '../recording_disposition.dart';
 import '../flutter_sound_recorder.dart';
@@ -32,15 +32,12 @@ import '../util/recorded_audio.dart';
 import 'recorder_playback_controller.dart' as controller;
 
 typedef OnStart = void Function();
-typedef OnDelete = void Function();
 typedef OnProgress = void Function(RecordedAudio media);
 typedef OnStop = void Function(RecordedAudio media);
-typedef OnPaused = void Function(RecordedAudio media, bool isPaused);
 
 enum _RecorderState {
   isStopped,
   isRecording,
-  isPaused,
 }
 
 /// The [requestPermissions] callback allows you to provide an
@@ -51,26 +48,14 @@ typedef UIRequestPermission = Future<bool> Function(
 
 /// A UI for recording audio.
 class SoundRecorderUI extends StatefulWidget {
-  static const int _barHeight = 60;
-
-  final Color backgroundColor;
-
-
   /// Callback to be notified when the recording stops
   final OnStop onStopped;
 
   /// Callback to be notified when the recording starts.
   final OnStart onStart;
 
-  /// Callback to be notified when the recording pause.
-  final OnPaused onPaused;
-
-  final OnDelete onDelete;
-
   /// Stores and Tracks the recorded audio.
   final RecordedAudio audio;
-
-  final bool showTrashCan;
 
   /// The [requestPermissions] callback allows you to request
   /// the necessary permissions to record a track.
@@ -126,7 +111,7 @@ class SoundRecorderUI extends StatefulWidget {
   ///   SoundRecorderIU(track,
   ///       informUser: (context, track)
   ///           {
-  ///               // pseudo code
+  ///               // psuedo code
   ///               String reason;
   ///               if (!microphonePermission.granted)
   ///                 reason += 'please allow microphone';
@@ -144,37 +129,30 @@ class SoundRecorderUI extends StatefulWidget {
   /// ```
   SoundRecorderUI(
     Track track, {
-    this.backgroundColor = Colors.blueGrey,
     this.onStart,
     this.onStopped,
-    this.onPaused,
-    this.onDelete,
     this.requestPermissions,
-    this.showTrashCan = true,
     Key key,
   })  : audio = RecordedAudio.toTrack(track),
         super(key: key);
 
   @override
   State<StatefulWidget> createState() {
-    return SoundRecorderUIState(backgroundColor);
+    return SoundRecorderUIState();
   }
 }
 
 ///
 class SoundRecorderUIState extends State<SoundRecorderUI> {
-
   _RecorderState _state = _RecorderState.isStopped;
 
   FlutterSoundRecorder _recorder;
-  Color backgroundColor;
 
   ///
-  SoundRecorderUIState(Color backgroundColor,) {
+  SoundRecorderUIState() {
      //_recorder.openAudioSession();
     //_recorder.onStarted = _onStarted;
     //_recorder.onStopped = _onStopped;
-    this.backgroundColor = backgroundColor;
   }
 
   @override
@@ -183,12 +161,6 @@ class SoundRecorderUIState extends State<SoundRecorderUI> {
     _recorder.openAudioSession(focus: AudioFocus.requestFocusAndDuckOthers).then((toto){controller.registerRecorder(context, this);});
     super.initState();
   }
-  @override
-  void deactivate( )
-  {
-    _recorder.stopRecorder();;
-    super.deactivate( );
-  }
 
   @override
   Widget build(BuildContext context)  {
@@ -196,35 +168,24 @@ class SoundRecorderUIState extends State<SoundRecorderUI> {
   }
 
   Widget _buildButtons() {
-    return
-      Container(
-          //height: 70,
-          decoration: BoxDecoration(
-              color: backgroundColor,
-              borderRadius: BorderRadius.circular(SoundRecorderUI._barHeight / 2)),
-          child: Row(mainAxisAlignment: MainAxisAlignment.start,
-              children: <Widget>[
-                //SizedBox(width: 20,),
-                _buildMicrophone(),
-                _buildStartStopButton(),
-                widget.showTrashCan != null ? _buildTrashButton() : SizedBox(),
-                Text(_isPaused ? 'Recorder is paused' : _isRecording ? 'Recorder is recording' : 'Recorder is stopped'),
-
-              ],
-            //Expanded(child: Column(children: rows))
-          ));
+    return Column(
+      children: <Widget>[
+        _buildMicrophone(),
+        _buildStartStopButton(),
+      ],
+    );
   }
 
   ///
   Stream<RecordingDisposition> get dispositionStream =>
       _recorder.dispositionStream();
 
-  static const _minDbCircle = 15;
+  static const _minDbCircle = 55;
 
   Widget _buildMicrophone() {
     return SizedBox(
-        height: 50,
-        width: 50,
+        height: 120,
+        width: 120,
         child: StreamBuilder<RecordingDisposition>(
             stream: _recorder.dispositionStream(),
             initialData: RecordingDisposition.zero(), // was START_DECIBELS
@@ -234,69 +195,63 @@ class SoundRecorderUIState extends State<SoundRecorderUI> {
               if (disposition.decibels == 0) min = 0;
               //      onRecorderProgress(context, this, disposition.duration);
               return Stack(alignment: Alignment.center, children: [
-                Visibility (
-                  visible: _isRecording || _isPaused,
-                child: AnimatedContainer(
-                    duration: Duration(milliseconds: 20),
-                    // + MIN_DB_CIRCLE so the animated circle is always a
-                    // reasonable size (db ranges is typically 45 - 80db)
-                    width: disposition.decibels + min,
-                    height: disposition.decibels + min,
-                    constraints: BoxConstraints(
-                        maxHeight: 80.0 + min, maxWidth: 80.0 + min),
-                    decoration:
-                        BoxDecoration(shape: BoxShape.circle, color: Colors.red),
-                  ),
+                AnimatedContainer(
+                  duration: Duration(milliseconds: 20),
+                  // + MIN_DB_CIRCLE so the animated circle is always a
+                  // reasonable size (db ranges is typically 45 - 80db)
+                  width: disposition.decibels + min,
+                  height: disposition.decibels + min,
+                  constraints: BoxConstraints(
+                      maxHeight: 80.0 + min, maxWidth: 80.0 + min),
+                  decoration:
+                      BoxDecoration(shape: BoxShape.circle, color: Colors.red),
                 ),
-                InkWell(onTap: _onTapStartStop, child: Icon(_isStopped ? Icons.brightness_1 : Icons.stop, color: _isStopped ? Colors.red : Colors.black),),
+                InkWell(onTap: _onRecord, child: Icon(Icons.mic, size: 60))
               ]);
             }));
   }
 
   Widget _buildStartStopButton() {
-    return  SizedBox(
-        height: 50,
-        width: 30,
-        child:InkWell(
-        onTap: _isStopped ? null : (_isPaused ? _resume : _pause),
+    return InkWell(
+        onTap: _onTapStartStop,
         child: Icon(
-          !_isPaused ?  Icons.pause :  Icons.play_arrow  ,
-          //size: 30,
-          color: !_isStopped ? Colors.black : Colors.grey,
-        )));
+          _isRecording ? Icons.stop : Icons.play_circle_filled,
+          size: 60,
+          color: Colors.red,
+        ));
   }
-
-  Widget _buildTrashButton() {
-    return  SizedBox(
-        height: 50,
-        width: 30,
-        child:InkWell(
-            onTap: _isStopped && widget.onDelete != null ? widget.onDelete : null,
-            child: Icon(
-               Icons.delete_outline  ,
-              //size: 30,
-              color: _isStopped && widget.onDelete != null ? Colors.black : Colors.grey,
-            )));
-  }
-
-
 
   void _onTapStartStop() {
-    if (_isRecording || _isPaused) {
-      _stop();
+    if (_isRecording) {
+      stop();
     } else {
       _onRecord();
     }
   }
 
   bool get _isRecording => _state == _RecorderState.isRecording;
-  bool get _isPaused => _state == _RecorderState.isPaused;
-  bool get _isStopped => _state == _RecorderState.isStopped;
 
   void dispose() {
-
+    _stop();
     _recorder.closeAudioSession();
     super.dispose();
+  }
+
+  void _onRecord() {
+    if (!_isRecording) {
+      _requestPermission(context, widget.audio.track).then((accepted) async {
+        if (accepted) {
+          //Log.e(green('started Recording to: '
+              //'${await (await widget.audio).track.identity})'));
+          _recorder.startRecorder(toFile: widget.audio.track.trackPath
+            //widget.audio.track,
+          );
+          _onStarted(wasUser: true);
+
+          //Log.d(widget.audio.track.identity);
+        }
+      });
+    }
   }
 
   /// The [stop] methods stops the recording and calls
@@ -306,50 +261,45 @@ class SoundRecorderUIState extends State<SoundRecorderUI> {
     _stop();
   }
 
-  void pause() {
-    _pause();
-  }
-
-  void resume() {
-    _resume();
-  }
-
-
-  void _onRecord() async {
-    if (!_isRecording) {
-      await _recorder.startRecorder(toFile: widget.audio.track.trackPath);
-      _onStarted(wasUser: true);
-
-      //Log.d(widget.audio.track.identity);
-    }
-  }
-  void _stop() async {
-    if (_recorder.isRecording || _recorder.isPaused) {
-      await _recorder.stopRecorder();
+  void _stop() {
+    if (_recorder.isRecording) {
+      _recorder.stopRecorder();
       _onStopped(wasUser: true);
     }
   }
 
-
-  void _pause() async {
-    if (_recorder.isRecording) {
-      await _recorder.pauseRecorder();
-      _onPaused(wasUser: true);
-    }
-  }
-
-
-  void _resume() async{
-    if (_recorder.isPaused) {
-      await _recorder.resumeRecorder();
-      _onResume(wasUser: true);
-    }
-  }
-
-
   /// as recording progresses we update the media's duration.
   void _updateDuration(Duration duration) {
-    widget.audio.duration = duration;
+    // TODO widget.audio.duration = _recorder.duration;
+  }
+
+  /// If requried displays the OSs permission UI to request
+  /// permissions required for recording.
+  /// ignore: avoid_types_on_closure_parameters
+  Future<bool> _requestPermission(BuildContext context, Track track) async {
+    var requesting = Completer<bool>();
+
+    Future<bool> request;
+
+    if (widget.requestPermissions != null) {
+      /// ask the user before we actually ask the OS so
+      /// the dev has a chance to inform the user as to why we need
+      /// permissions.
+      request = widget.requestPermissions(context, track);
+    } else {
+      request = Future.value(true);
+    }
+
+    request.then((granted) async {
+      requesting.complete(granted);
+
+      /// ignore: avoid_types_on_closure_parameters
+    }).catchError((Object error) {
+      Log.e("Error occured requesting permissions: $error");
+      requesting.completeError(error);
+    });
+
+    return requesting.future;
   }
 
   void _onStarted({bool wasUser}) async {
@@ -379,37 +329,4 @@ class SoundRecorderUIState extends State<SoundRecorderUI> {
       controller.onRecordingStopped(context, Duration(milliseconds: 2000)); // TODO
     });
   }
-
-
-  void _onPaused({bool wasUser}) async {
-    //Log.d(green('started Recording to: '
-    //'${await (await widget.audio).track.identity})'));
-
-    setState(() {
-      _state = _RecorderState.isPaused;
-
-      if (widget.onPaused != null) {
-        widget.onPaused(widget.audio, true);
-      }
-
-      controller.onRecordingPaused(context);
-    });
-  }
-
-
-  void _onResume({bool wasUser}) async {
-    //Log.d(green('started Recording to: '
-    //'${await (await widget.audio).track.identity})'));
-
-    setState(() {
-      _state = _RecorderState.isRecording;
-
-      if (widget.onPaused != null) {
-        widget.onPaused(widget.audio, false);
-      }
-
-      controller.onRecordingResume(context);
-    });
-  }
-
 }

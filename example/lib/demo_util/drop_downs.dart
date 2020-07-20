@@ -18,7 +18,7 @@
 
 
 import 'package:flutter/material.dart';
-import 'package:flutter_sound/flutter_sound.dart';
+import 'package:flutter_sound_lite/flutter_sound.dart';
 
 import 'demo_active_codec.dart';
 import 'demo_common.dart';
@@ -106,7 +106,7 @@ class _DropdownsState extends State<Dropdowns> {
           child: Text('OGG/Opus'),
         ),
         DropdownMenuItem<Codec>(
-          value: Codec.opusCAF,
+          value: Codec.cafOpus,
           child: Text('CAF/Opus'),
         ),
         DropdownMenuItem<Codec>(
@@ -118,8 +118,8 @@ class _DropdownsState extends State<Dropdowns> {
           child: Text('OGG/Vorbis'),
         ),
         DropdownMenuItem<Codec>(
-          value: Codec.pcm16WAV,
-          child: Text('PCM Wave'),
+          value: Codec.pcm,
+          child: Text('PCM'),
         ),
       ],
     );

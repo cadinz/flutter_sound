@@ -143,8 +143,8 @@ public class FlutterSoundAudioRecorder
 
 	int[] tabCodec =
 		{
-			AudioFormat.ENCODING_DEFAULT, // DEFAULT
-			AudioFormat.ENCODING_AAC_LC, // aacADTS
+			AudioFormat.ENCODING_AAC_LC, // DEFAULT // Not used
+			AudioFormat.ENCODING_AAC_LC, // aacADTS // Not used
 			0, // opusOGG
 			0, // opusCAF
 			AudioFormat.ENCODING_MP3, // MP3 // Not used
@@ -155,11 +155,9 @@ public class FlutterSoundAudioRecorder
 			0, // pcm16CAF
 			0, // flac
 			0, // aacMP4
-			0, // amrNB
-			0, // amrWB
+
+
 		};
-
-
 
 	public void _startRecorder
 		(
@@ -167,20 +165,19 @@ public class FlutterSoundAudioRecorder
 			Integer sampleRate,
 			Integer bitRate,
 			FlutterSoundCodec codec,
-			String path,
-			int audioSource
+			String path
 		)
 	{
 		/**
 		 * Size of the buffer where the audio data is stored by Android
 		 */
-		int channelConfig = (numChannels == 1) ? AudioFormat.CHANNEL_IN_MONO : AudioFormat.CHANNEL_IN_STEREO;
+		int channelConfig = (numChannels == 1) ? AudioFormat.CHANNEL_IN_MONO : AudioFormat.CHANNEL_IN_MONO;
 		int audioFormat = tabCodec[codec.ordinal()];
 		int bufferSize = AudioRecord.getMinBufferSize(sampleRate,
 		                                              channelConfig, tabCodec[codec.ordinal()]) * 2;
 
 
-		recorder = new AudioRecord( audioSource,
+		recorder = new AudioRecord( MediaRecorder.AudioSource.MIC,
 		                            sampleRate,
 		                            channelConfig,
 		                            audioFormat,

@@ -102,13 +102,6 @@ class FlautoRecorderPlugin  extends AudioSessionManager
 				aRecorder.isEncoderSupported ( call, result );
 			}
 			break;
-
-			case "setAudioFocus":
-			{
-				aRecorder.setAudioFocus( call, result );
-			}
-			break;
-
 			case "startRecorder":
 			{
 				aRecorder.startRecorder ( call, result );
@@ -213,8 +206,7 @@ public class FlutterSoundRecorder extends Session
 		false, // pcm16CAF
 		false, // flac
 		false, // aacMP4
-		true,  // amrNB
-		true   // amrWB
+		true, // amr
 	};
 
 	final static int CODEC_OPUS   = 2;
@@ -311,63 +303,26 @@ public class FlutterSoundRecorder extends Session
 		false, // pcm16CAF
 		false, // flac
 		false, // aacMP4
-		false, // amrNB
-		false, // amrWB
+		false, // amr
 	};
-
-	enum AudioSource {
-		defaultSource,
-		microphone,
-		voiceDownlink, // (if someone can explain me what it is, I will be grateful ;-) )
-		camCorder,
-		remote_submix,
-		unprocessed,
-		voice_call,
-		voice_communication,
-		voice_performance,
-		voice_recognition,
-		voiceUpLink,
-		bluetoothHFP,
-		headsetMic,
-		lineIn
-	}
-
-	int[] tabAudioSource =
-		{
-			MediaRecorder.AudioSource.DEFAULT,
-			MediaRecorder.AudioSource.MIC,
-			MediaRecorder.AudioSource.VOICE_DOWNLINK,
-			MediaRecorder.AudioSource.CAMCORDER,
-			MediaRecorder.AudioSource.REMOTE_SUBMIX,
-			MediaRecorder.AudioSource.UNPROCESSED,
-			MediaRecorder.AudioSource.VOICE_CALL,
-			MediaRecorder.AudioSource.VOICE_COMMUNICATION,
-			10, //MediaRecorder.AudioSource.VOICE_PERFORMANCE,,
-			MediaRecorder.AudioSource.VOICE_RECOGNITION,
-			MediaRecorder.AudioSource.VOICE_UPLINK,
-			MediaRecorder.AudioSource.DEFAULT, // bluetoothHFP,
-			MediaRecorder.AudioSource.DEFAULT, // headsetMic,
-			MediaRecorder.AudioSource.DEFAULT, // lineIn
-
-		};
-
 
 
 	public void startRecorder ( final MethodCall call, final Result result )
 	{
 		//taskScheduler.submit ( () ->
 		{
-			Integer                         sampleRate          = call.argument ( "sampleRate" );
-			Integer                         numChannels         = call.argument ( "numChannels" );
-			Integer                         bitRate             = call.argument ( "bitRate" );
-			int                             _codec              = call.argument ( "codec" );
-			FlutterSoundCodec               codec               = FlutterSoundCodec.values()[ _codec ];
-			final String                     path               = call.argument ( "path" );
-			int                             _audioSource        = call.argument ( "audioSource" );
-			int                             audioSource         = tabAudioSource[_audioSource];
+			Integer           sampleRate          = call.argument ( "sampleRate" );
+			Integer           numChannels         = call.argument ( "numChannels" );
+			Integer           bitRate             = call.argument ( "bitRate" );
+			int               _codec              = call.argument ( "codec" );
+			FlutterSoundCodec codec               = FlutterSoundCodec.values()[ _codec ];
+			final String      path                = call.argument ( "path" );
 			mPauseTime = 0;
 			mStartPauseTime = -1;
-			stop(); // To start a new clean record
+			if (recorder != null)
+			{
+				recorder._stopRecorder (  );
+			}
 			if (_isAudioRecorder[codec.ordinal()])
 			{
 				recorder = new FlutterSoundAudioRecorder();
@@ -377,15 +332,14 @@ public class FlutterSoundRecorder extends Session
 			}
 			try
 			{
-				recorder._startRecorder( numChannels, sampleRate, bitRate, codec, path, audioSource );
+				recorder._startRecorder( numChannels, sampleRate, bitRate, codec, path );
 			} catch ( Exception e )
 			{
 				result.error( TAG, "Error starting recorder", e.getMessage() );
 				return;
 			}
 			// Remove all pending runnables, this is just for safety (should never happen)
-			//recordHandler.removeCallbacksAndMessages ( null );
-
+			recordHandler.removeCallbacksAndMessages ( null );
 			final long systemTime = SystemClock.elapsedRealtime();
 			this.model.setRecorderTicker ( () ->
 			                               {
@@ -446,19 +400,11 @@ public class FlutterSoundRecorder extends Session
 
 	}
 
-	void stop()
-	{
-		recordHandler.removeCallbacksAndMessages ( null );
-		if (recorder != null)
-			recorder._stopRecorder (  );
-		recorder = null;
-
-
-	}
-
 	public void stopRecorder ( final MethodCall call, final Result result )
 	{
-		stop();
+		recordHandler.removeCallbacksAndMessages ( null );
+		recorder._stopRecorder (  );
+		recorder = null;
 		result.success ( "Media Recorder is closed" );
 	}
 

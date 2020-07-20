@@ -83,7 +83,7 @@ extern void FlautoRecorderReg(NSObject<FlutterPluginRegistrar>* registrar)
                 [aFlautoRecorder initializeFlautoRecorder: call result:result];
         } else
         
-        if ([@"setAudioFocus" isEqualToString:call.method])
+        if ([@"setFocus" isEqualToString:call.method])
         {
                 [aFlautoRecorder setAudioFocus: call result:result];
         } else

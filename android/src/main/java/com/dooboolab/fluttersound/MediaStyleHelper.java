@@ -82,7 +82,9 @@ public class MediaStyleHelper {
                 MediaMetadataCompat mediaMetadata = controller.getMetadata();
                 MediaDescriptionCompat description = mediaMetadata.getDescription();
 
-                NotificationCompat.Builder builder = new NotificationCompat.Builder(context,BackgroundAudioService.notificationChannelId);
+                // !!!NotificationCompat.Builder builder = new
+                // NotificationCompat.Builder(context, channelId);//!!! [LARPOUX]
+                NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
                 builder.setContentTitle(description.getTitle()).setContentText(description.getSubtitle())
                                 .setSubText(description.getDescription()).setLargeIcon(description.getIconBitmap())
                                 .setContentIntent(controller.getSessionActivity())

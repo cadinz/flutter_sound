@@ -23,9 +23,7 @@ export 'src/flutter_sound_recorder.dart';
 //export 'src/track_player.dart';
 export 'src/flutter_sound_helper.dart';
 export 'src/util/log.dart';
-export 'src/util/recorded_audio.dart';
 export 'src/util/ansi_color.dart';
-export 'src/ui/grayed_out.dart';
 
 export 'src/ui/recorder_playback_controller.dart'
             show RecorderPlaybackController;
@@ -157,18 +155,6 @@ enum AudioFocus {
   doNotRequestFocus,
 }
 
-enum AudioDevice {
-  speaker,
-  // allowHeadset and allowEarPiece are the same behaviour on both Android and iOS
-  headset,
-  earPiece,
-  blueTooth,
-  // only for iOS, Android do the same as allowBlueTooth
-  blueToothA2DP,
-  // only for iOS, Android do nothing
-  airPlay
-}
-
 
 // Audio Flags
 // -----------
@@ -178,7 +164,6 @@ const allowEarPiece = 4;
 const allowBlueTooth = 8;
 const allowAirPlay = 16;
 const allowBlueToothA2DP = 32;
-
 
 /*
 final List<String> iosSessionCategory = [

@@ -21,10 +21,8 @@ import 'package:flutter/material.dart';
 
 import 'demo_util/demo3_body.dart';
 
-
 /// demonstrates the recording widget linked to a playback widget.
 void main() {
-
   runApp(MyApp());
 }
 
@@ -37,7 +35,6 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
-
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(

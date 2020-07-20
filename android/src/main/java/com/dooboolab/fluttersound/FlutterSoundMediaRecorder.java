@@ -31,8 +31,8 @@ public class FlutterSoundMediaRecorder
 	final static String             TAG                = "SoundMediaRecorder";
 
 	static int codecArray[] = {
-		MediaRecorder.AudioEncoder.DEFAULT,
-		MediaRecorder.AudioEncoder.AAC,
+		0 // DEFAULT
+		, MediaRecorder.AudioEncoder.AAC,
 		sdkCompat.AUDIO_ENCODER_OPUS,
 		0, // CODEC_CAF_OPUS (specific Apple)
 		0,// CODEC_MP3 (not implemented)
@@ -44,13 +44,12 @@ public class FlutterSoundMediaRecorder
 		0, // flac
 		0, // aacMP4
 		MediaRecorder.AudioEncoder.AMR_NB,
-		MediaRecorder.AudioEncoder.AMR_WB,
 	};
 
 
 
 	static int formatsArray[] = {
-		MediaRecorder.OutputFormat.DEFAULT // DEFAULT
+		MediaRecorder.OutputFormat.AAC_ADTS // DEFAULT
 		, MediaRecorder.OutputFormat.AAC_ADTS // CODEC_AAC
 		, sdkCompat.OUTPUT_FORMAT_OGG // CODEC_OPUS
 		, 0 // CODEC_CAF_OPUS (this is apple specific)
@@ -63,11 +62,10 @@ public class FlutterSoundMediaRecorder
 		, 0 // flac
 		, 0 // aacMP4
 		, MediaRecorder.OutputFormat.AMR_NB
-		, MediaRecorder.OutputFormat.AMR_WB
 	};
 
 	static       String pathArray[]               = {
-		"sound.fs" // DEFAULT
+		"sound.aac" // DEFAULT
 		, "sound.aac" // CODEC_AAC
 		, "sound.opus" // CODEC_OPUS
 		, "sound_opus.caf" // CODEC_CAF_OPUS (this is apple specific)
@@ -79,8 +77,7 @@ public class FlutterSoundMediaRecorder
 		, "sound_pcm.caf" // pcm16CAF
 		, "sound.flac" // flac
 		, "sound.mp4" // aacMP4
-		, "sound.amr" // amrNB
-		, "sound.amr" // amrWB
+		, "sound.amr" // amr
 
 	};
 
@@ -94,8 +91,7 @@ public class FlutterSoundMediaRecorder
 			Integer sampleRate,
 			Integer bitRate,
 			FlutterSoundCodec codec,
-			String path,
-			int audioSource
+			String path
                 )
 		throws
 		IOException
@@ -117,7 +113,7 @@ public class FlutterSoundMediaRecorder
 		try
 		{
 			mediaRecorder.reset();
-			mediaRecorder.setAudioSource (audioSource );
+			mediaRecorder.setAudioSource ( MediaRecorder.AudioSource.MIC );
 			int androidEncoder      = codecArray[ codec.ordinal () ];
 			int androidOutputFormat = formatsArray[ codec.ordinal () ];
 			mediaRecorder.setOutputFormat ( androidOutputFormat );

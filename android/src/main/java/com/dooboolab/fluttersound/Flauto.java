@@ -1,5 +1,5 @@
 package com.dooboolab.fluttersound;
-import com.dooboolab.ffmpeg.FlutterFFmpegPlugin;
+//import com.dooboolab.ffmpeg.FlutterFFmpegPlugin;
 /*
  * Copyright 2018, 2019, 2020 Dooboolab.
  *
@@ -54,7 +54,7 @@ public class Flauto
 	implements FlutterPlugin,
 	           ActivityAware
 {
-    public static final boolean FULL_FLAVOR = true;
+    public static final boolean FULL_FLAVOR = false;
 	static Context ctx;
 	static Registrar reg;
 	static Activity androidActivity;
@@ -70,7 +70,7 @@ public class Flauto
 		FlautoPlayerPlugin.attachFlautoPlayer ( ctx, binding.getBinaryMessenger () );
 		FlautoRecorderPlugin.attachFlautoRecorder ( ctx, binding.getBinaryMessenger () );
 		//TrackPlayerPlugin.attachTrackPlayer ( ctx, binding.getBinaryMessenger () );
-        if (FULL_FLAVOR) {FlutterFFmpegPlugin.attachFFmpegPlugin( ctx, binding.getBinaryMessenger() );}
+        if (FULL_FLAVOR) ;//{FlutterFFmpegPlugin.attachFFmpegPlugin( ctx, binding.getBinaryMessenger() );}
 	}
 
 
@@ -86,7 +86,7 @@ public class Flauto
 		FlautoPlayerPlugin.attachFlautoPlayer ( ctx, registrar.messenger () );
 		FlautoRecorderPlugin.attachFlautoRecorder ( ctx, registrar.messenger ()  );
 		//TrackPlayerPlugin.attachTrackPlayer ( ctx, registrar.messenger ()  );
-        if (FULL_FLAVOR) {FlutterFFmpegPlugin.attachFFmpegPlugin(ctx,registrar.messenger ()  );}
+        if (FULL_FLAVOR) ;//{FlutterFFmpegPlugin.attachFFmpegPlugin(ctx,registrar.messenger ()  );}
 
 	}
 

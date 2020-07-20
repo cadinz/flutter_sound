@@ -21,17 +21,14 @@ package com.dooboolab.fluttersound;
 
 
 import android.content.Context;
-import android.media.AudioDeviceInfo;
 import android.media.MediaPlayer;
 import android.media.AudioManager;
-import android.media.MicrophoneInfo;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
 
 import android.media.AudioFocusRequest;
-import android.widget.MediaController;
 
 import org.json.JSONObject;
 
@@ -112,9 +109,9 @@ class FlautoPlayerPlugin extends AudioSessionManager
 			}
 			break;
 
-			case "setAudioFocus":
+			case "setFocus":
 			{
-				aPlayer.setAudioFocus( call, result );
+				aPlayer.setFocus ( call, result );
 			}
 			break;
 
@@ -210,6 +207,36 @@ class sdkCompat
 	static final int ENCODING_OPUS        = 20; // Android R
 }
 
+class PlayerAudioModel
+{
+	final public static String DEFAULT_FILE_LOCATION = Environment.getDataDirectory ().getPath () + "/default.aac"; // SDK
+	public              int    subsDurationMillis    = 10;
+
+	private MediaPlayer mediaPlayer;
+	private long        playTime = 0;
+
+
+	public MediaPlayer getMediaPlayer ()
+	{
+		return mediaPlayer;
+	}
+
+	public void setMediaPlayer ( MediaPlayer mediaPlayer )
+	{
+		this.mediaPlayer = mediaPlayer;
+	}
+
+	public long getPlayTime ()
+	{
+		return playTime;
+	}
+
+	public void setPlayTime ( long playTime )
+	{
+		this.playTime = playTime;
+	}
+}
+
 //-------------------------------------------------------------------------------------------------------------
 
 
@@ -250,21 +277,8 @@ public class FlutterSoundPlayer extends Session implements MediaPlayer.OnErrorLi
 	};
 
 
-	enum PlayerState {
-		/// Player is stopped
-		isStopped,
-		/// Player is playing
-		isPlaying,
-		/// Player is paused
-		isPaused,
-	}
-
-
-
 	final static  String           TAG         = "FlutterSoundPlugin";
-	//final         PlayerAudioModel model       = new PlayerAudioModel ();
-	int subsDurationMillis = 0;
-	MediaPlayer mediaPlayer                    = null;
+	final         PlayerAudioModel model       = new PlayerAudioModel ();
 	private       Timer            mTimer      = new Timer ();
 	final private Handler          mainHandler = new Handler ();
 
@@ -284,7 +298,7 @@ public class FlutterSoundPlayer extends Session implements MediaPlayer.OnErrorLi
 	{
 		boolean r = prepareFocus(call);
 		if (r)
-		        result.success ( getPlayerState());
+		        result.success ( r);
 		else
 			result.error ( ERR_UNKNOWN, ERR_UNKNOWN, "Failure to open session");
 
@@ -295,24 +309,14 @@ public class FlutterSoundPlayer extends Session implements MediaPlayer.OnErrorLi
 		if (hasFocus)
 			abandonFocus();
 		releaseSession();
-		result.success ( getPlayerState() );
+		result.success ( "Flauto Recorder Released" );
 	}
 
-	Boolean isPaused() { return !mediaPlayer.isPlaying () && mediaPlayer.getCurrentPosition () > 1;}
 
-	int getPlayerState()
-	{
-		if (mediaPlayer == null)
-			return PlayerState.isStopped.ordinal();
-		if (mediaPlayer.isPlaying())
-			return PlayerState.isPlaying.ordinal();
-		return isPaused() ? PlayerState.isPaused.ordinal() : PlayerState.isStopped.ordinal();
-	}
 
 
 	public void startPlayer ( final MethodCall call, final Result result )
 	{
-
 		Integer           _codec     = call.argument ( "codec" );
 		FlutterSoundCodec codec      = FlutterSoundCodec.values()[ ( _codec != null ) ? _codec : 0 ];
 		byte[]            dataBuffer = call.argument ( "fromDataBuffer" );
@@ -337,50 +341,46 @@ public class FlutterSoundPlayer extends Session implements MediaPlayer.OnErrorLi
 			}
 
 		}
-		stop(); // To start a new clean playback
-		if ( mediaPlayer != null )
+		if ( this.model.getMediaPlayer () != null )
 		{
+			Boolean isPaused = !this.model.getMediaPlayer ().isPlaying () && this.model.getMediaPlayer ().getCurrentPosition () > 1;
 
-
-			if ( isPaused() )
+			if ( isPaused )
 			{
-				mediaPlayer.start ();
-				result.success ( getPlayerState());
+				this.model.getMediaPlayer ().start ();
+				result.success ( true );
 				return;
 			}
 
 			Log.e ( TAG, "Player is already running. Stop it first." );
-			result.success ( getPlayerState() );
+			result.success ( false );
 			return;
 		} else
 		{
-			mediaPlayer = new MediaPlayer () ;
+			this.model.setMediaPlayer ( new MediaPlayer () );
 		}
-
 		mTimer = new Timer ();
 
 		try
 		{
 			if ( path == null )
 			{
-				//this.model.getMediaPlayer ().setDataSource ( PlayerAudioModel.DEFAULT_FILE_LOCATION );
-				result.error( ERR_UNKNOWN, ERR_UNKNOWN, "path is NULL");
-				return;
+				this.model.getMediaPlayer ().setDataSource ( PlayerAudioModel.DEFAULT_FILE_LOCATION );
 			}
-			//else
+			else
 			{
-				mediaPlayer.setDataSource (  path );
+				this.model.getMediaPlayer ().setDataSource (  path );
 			}
 			final String pathFile = path;
-			mediaPlayer.setOnPreparedListener ( mp -> onPrepared(mp, pathFile)	);
+			this.model.getMediaPlayer ().setOnPreparedListener ( mp -> onPrepared(mp, pathFile)	);
 			/*
 			 * Detect when finish playing.
 			 */
-			mediaPlayer.setOnCompletionListener ( mp -> onCompletion(mp)
+			this.model.getMediaPlayer ().setOnCompletionListener ( mp -> onCompletion(mp)
 			                                                      );
-			mediaPlayer.setOnErrorListener(this);
+			this.model.getMediaPlayer ().setOnErrorListener(this);
 
-			mediaPlayer.prepare ();
+			this.model.getMediaPlayer ().prepare ();
 		}
 		catch ( Exception e )
 		{
@@ -388,7 +388,7 @@ public class FlutterSoundPlayer extends Session implements MediaPlayer.OnErrorLi
 			result.error ( ERR_UNKNOWN, ERR_UNKNOWN, e.getMessage () );
 			return;
 		}
-		result.success ( getPlayerState() );
+		result.success ( true );
 	}
 
 	public void startPlayerFromTrack ( final MethodCall call, final Result result )
@@ -410,14 +410,14 @@ public class FlutterSoundPlayer extends Session implements MediaPlayer.OnErrorLi
 			 * Reset player.
 			 */
 			Log.d(TAG, "Playback completed.");
+				invokeMethodWithString("audioPlayerFinishedPlaying", null);
 			mTimer.cancel();
 			if (mp.isPlaying()) {
 				mp.stop();
 			}
 			mp.reset();
 			mp.release();
-			mediaPlayer = (null);
-			invokeMethodWithInteger("audioPlayerFinishedPlaying", getPlayerState());
+			model.setMediaPlayer(null);
 	}
 
 	// Listener called when media player has completed preparation.
@@ -435,15 +435,9 @@ public class FlutterSoundPlayer extends Session implements MediaPlayer.OnErrorLi
 				try {
 					long position = mp.getCurrentPosition();
 					long duration = mp.getDuration();
-					if (position > duration)
-					{
-						assert(position <= duration);
-					}
-
 					Map<String, Object> dic = new HashMap<String, Object> ();
 					dic.put ( "position", position );
 					dic.put ( "duration", duration );
-					dic.put ( "playerStatus", getPlayerState() );
 
 					mainHandler.post(new Runnable() {
 						@Override
@@ -459,37 +453,35 @@ public class FlutterSoundPlayer extends Session implements MediaPlayer.OnErrorLi
 			}
 		};
 
-		mTimer.schedule(mTask, 0, subsDurationMillis);
-	}
-
-	void stop()
-	{
-		mTimer.cancel ();
-
-		if ( mediaPlayer == null )
-		{
-			return;
-		}
-
-		try
-		{
-			mediaPlayer.stop ();
-			mediaPlayer.reset ();
-			mediaPlayer.release ();
-			mediaPlayer = ( null );
-		}
-		catch ( Exception e )
-		{
-			Log.e ( TAG, "stopPlay exception: " + e.getMessage () );
-		}
-
+		mTimer.schedule(mTask, 0, model.subsDurationMillis);
+		String resolvedPath = (path == null) ? PlayerAudioModel.DEFAULT_FILE_LOCATION : path;
+		//result.success((resolvedPath));
 	}
 
 
 	public void stopPlayer ( final MethodCall call, final Result result )
 	{
-		stop();
-		result.success ( getPlayerState());
+		mTimer.cancel ();
+
+		if ( this.model.getMediaPlayer () == null )
+		{
+			result.success ( "Player already Closed");
+			return;
+		}
+
+		try
+		{
+			this.model.getMediaPlayer ().stop ();
+			this.model.getMediaPlayer ().reset ();
+			this.model.getMediaPlayer ().release ();
+			this.model.setMediaPlayer ( null );
+			result.success ( "stopped player." );
+		}
+		catch ( Exception e )
+		{
+			Log.e ( TAG, "stopPlay exception: " + e.getMessage () );
+			result.error ( ERR_UNKNOWN, ERR_UNKNOWN, e.getMessage () );
+		}
 	}
 
 	public void isDecoderSupported ( final MethodCall call, final Result result )
@@ -503,21 +495,21 @@ public class FlutterSoundPlayer extends Session implements MediaPlayer.OnErrorLi
 				b = false;
 			}
 		}
-		result.success (b );
+		result.success ( b );
 
 	}
 
 	public void pausePlayer ( final MethodCall call, final Result result )
 	{
-		if ( mediaPlayer == null )
+		if ( this.model.getMediaPlayer () == null )
 		{
 			result.error ( ERR_PLAYER_IS_NULL, "pausePlayer()", ERR_PLAYER_IS_NULL );
 			return;
 		}
 		try
 		{
-			mediaPlayer.pause ();
-			result.success ( getPlayerState());
+			this.model.getMediaPlayer ().pause ();
+			result.success ( "paused player." );
 		}
 		catch ( Exception e )
 		{
@@ -529,13 +521,13 @@ public class FlutterSoundPlayer extends Session implements MediaPlayer.OnErrorLi
 
 	public void resumePlayer ( final MethodCall call, final Result result )
 	{
-		if ( mediaPlayer == null )
+		if ( this.model.getMediaPlayer () == null )
 		{
 			result.error ( ERR_PLAYER_IS_NULL, "resumePlayer", ERR_PLAYER_IS_NULL );
 			return;
 		}
 
-		if ( mediaPlayer.isPlaying () )
+		if ( this.model.getMediaPlayer ().isPlaying () )
 		{
 			result.error ( ERR_PLAYER_IS_PLAYING, ERR_PLAYER_IS_PLAYING, ERR_PLAYER_IS_PLAYING );
 			return;
@@ -543,9 +535,9 @@ public class FlutterSoundPlayer extends Session implements MediaPlayer.OnErrorLi
 
 		try
 		{
-			mediaPlayer.seekTo ( mediaPlayer.getCurrentPosition () );
-			mediaPlayer.start ();
-			result.success ( getPlayerState());
+			this.model.getMediaPlayer ().seekTo ( this.model.getMediaPlayer ().getCurrentPosition () );
+			this.model.getMediaPlayer ().start ();
+			result.success ( "resumed player." );
 		}
 		catch ( Exception e )
 		{
@@ -558,35 +550,35 @@ public class FlutterSoundPlayer extends Session implements MediaPlayer.OnErrorLi
 	{
 		int millis = call.argument ( "duration" ) ;
 
-		if ( mediaPlayer == null )
+		if ( this.model.getMediaPlayer () == null )
 		{
 			result.error ( ERR_PLAYER_IS_NULL, "seekToPlayer()", ERR_PLAYER_IS_NULL );
 			return;
 		}
 
-		int currentMillis = mediaPlayer.getCurrentPosition ();
+		int currentMillis = this.model.getMediaPlayer ().getCurrentPosition ();
 		Log.d ( TAG, "currentMillis: " + currentMillis );
 		// millis += currentMillis; [This was the problem for me]
 
 		Log.d ( TAG, "seekTo: " + millis );
 
-		mediaPlayer.seekTo ( millis );
-		result.success (getPlayerState() );
+		this.model.getMediaPlayer ().seekTo ( millis );
+		result.success ( String.valueOf ( millis ) );
 	}
 
 	public void setVolume ( final MethodCall call, final Result result )
 	{
 		double volume = call.argument ( "volume" );
 
-		if ( mediaPlayer == null )
+		if ( this.model.getMediaPlayer () == null )
 		{
 			result.error ( ERR_PLAYER_IS_NULL, "setVolume()", ERR_PLAYER_IS_NULL );
 			return;
 		}
 
 		float mVolume = ( float ) volume;
-		mediaPlayer.setVolume ( mVolume, mVolume );
-		result.success ( getPlayerState());
+		this.model.getMediaPlayer ().setVolume ( mVolume, mVolume );
+		result.success ( "Set volume" );
 	}
 
 
@@ -598,8 +590,8 @@ public class FlutterSoundPlayer extends Session implements MediaPlayer.OnErrorLi
 		}
 		int duration = call.argument ( "milliSec" );
 
-		subsDurationMillis = duration;
-		result.success ( getPlayerState());
+		this.model.subsDurationMillis = duration;
+		result.success ( "setSubscriptionDuration: " + this.model.subsDurationMillis );
 	}
 
 	void androidAudioFocusRequest ( final MethodCall call, final Result result )
@@ -616,11 +608,11 @@ public class FlutterSoundPlayer extends Session implements MediaPlayer.OnErrorLi
 				.build ();
 			Boolean b = true;
 
-			result.success (getPlayerState() );
+			result.success ( b );
 		} else
 		{
 			Boolean b = false;
-			result.success (getPlayerState() );
+			result.success ( b );
 		}
 	}
 	void setActive ( final MethodCall call, final Result result )
@@ -643,7 +635,7 @@ public class FlutterSoundPlayer extends Session implements MediaPlayer.OnErrorLi
 		{
 			b = false;
 		}
-		result.success (getPlayerState() );
+		result.success ( b );
 	}
 
 

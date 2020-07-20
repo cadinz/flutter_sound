@@ -29,8 +29,8 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import 'package:flutter/services.dart';
-import 'package:flutter_sound/flutter_sound.dart';
-import 'package:flutter_sound/src/session.dart';
+import 'package:flutter_sound_lite/flutter_sound.dart';
+import 'package:flutter_sound_lite/src/session.dart';
 
 
 enum Initialized {
@@ -89,7 +89,7 @@ class Session {
                 slotNo = getPlugin( )._lookupEmptySlot( this );
         }
 
-        void closeAudioSession() {
+        void closeSession() {
                 getPlugin().freeSlot(slotNo);
                 slotNo = null;
 
