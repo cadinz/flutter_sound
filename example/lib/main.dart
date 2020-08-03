@@ -177,12 +177,9 @@ class _MyAppState extends State<MyApp> {
     debugPrint('defaultPath = ${defaultPath}');
     await flutterRecorder.startRecorder(toFile: defaultPath);
     await flutterRecorder.stopRecorder();
-    await flutterRecorder.setSubscriptionDuration(Duration(milliseconds: 10));
+    await flutterRecorder.setSubscriptionDuration(Duration(milliseconds: 30));
     flutterRecorder.onProgress.listen((event) {
       RecordingDisposition eventstream = event;
-//      if(event.decibels.isNegative){
-//        return;
-//      }else{
       peakDuration.insert(0, eventstream.decibels);
       if (peakDuration.length > 10) {
         peakDuration.removeLast();

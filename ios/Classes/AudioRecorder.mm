@@ -218,13 +218,13 @@ public:
         {
 
            [audioRecorder updateMeters];
+           [audioRecorder setMeteringEnabled: YES];
 
 
 //            NSNumber* normalizedPeakLevel = [NSNumber numberWithDouble:MAX(0.2, [audioRecorder peakPowerForChannel:0] + 50)/ 2];
 
 
             NSNumber* normalizedPeakLevel2 = [NSNumber numberWithDouble:MAX(0.2, [audioRecorder averagePowerForChannel:0] + 50)/ 2]; // 0~25
-           [audioRecorder setMeteringEnabled: YES];
 
         return normalizedPeakLevel2;
 
