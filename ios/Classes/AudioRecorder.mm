@@ -28,7 +28,6 @@
 #import <Foundation/Foundation.h>
 #import "AudioRecorder.h"
 //#import "AudioRecorderEngine.h"
-
 #import "FlutterSoundRecorder.h"
 
 
@@ -73,10 +72,10 @@ public:
                 NSDictionary* settings = [tapFormat settings];
                 NSNumber* floatKey =  settings[@"AVLinearPCMIsFloatKey"] ;
                 BOOL isFloat = ([floatKey intValue] == 1);
-                
-                
+
+
                 //[settings setValue: [NSNumber numberWithInt: kAudioFormatLinearPCM] forKey:@"AVFormatIDKey"];
-                
+
                 //[settings setValue: audioSettings[ @"AVSampleRateKey"] forKey:@"AVSampleRateKey"];
                 //[settings setValue: audioSettings[ @"AVNumberOfChannelsKey"] forKey:@"AVNumberOfChannelsKey"];
                 //AVAudioCommonFormat* outputFormat =   [ AVAudioCommonFormat   initWithCommonFormat: AVAudioPCMFormatInt16 sampleRate:[AVAudioSession sharedInstance].sampleRate channels:AVAudioChannelCount(1) interleaved:false];
@@ -87,22 +86,23 @@ public:
                                          //[NSNumber numberWithInt: ],AVEncoderAudioQualityKey,
                                          //nil];
                //AVAudioPCMBuffer* buffer = [[AVAudioPCMBuffer alloc]initWithPCMFormat:inputFormat frameCapacity: engine.manualRenderingMaximumFrameCount ];
-                 
-                
-                
-                
+
+
+
+                NSLog(@"init System Audio: ");
                 audioFile = [[AVAudioFile alloc] initForWriting:fileURL settings: settings/*audioSettings2*/ error:nil];
-                         
+
                 [mixerNode installTapOnBus:0 bufferSize:4096 format: tapFormat block:
                         ^(AVAudioPCMBuffer * _Nonnull buffer, AVAudioTime * _Nonnull when)
                         {
-                                //NSLog(@"writing");
+
                                 [audioFile writeFromBuffer: buffer error:nil];
                                 if (isFloat)
                                 {
                                         float*  _Nonnull  pt = *[buffer floatChannelData];
                                         for (int i = 0; i < [buffer frameLength]; ++pt, ++i)
                                         {
+
                                                 double v = (double)(*pt);
                                                 if (v > maxAmplitude)
                                                         maxAmplitude = v;
@@ -111,46 +111,48 @@ public:
                         }
                 ];
            }
-        
+
         /* dtor */virtual ~AudioRecorderEngine()
         {
-        
+
         }
 
         virtual void startRecorder(FlutterSoundRecorder* rec)
         {
                 [engine startAndReturnError: nil];
         }
-        
+
         virtual void stopRecorder()
         {
                 [engine stop];
                 audioFile = nil;
                 engine = nil;
         }
-        
+
         virtual void resumeRecorder()
         {
                 [engine startAndReturnError: nil];
-         
+
         }
-        
+
         virtual void pauseRecorder()
         {
                 //[engine stop];
                 [engine pause];
-         
+
         }
-        
+
         NSNumber* recorderProgress()
         {
                 return 0;
         }
         virtual NSNumber* dbPeakProgress()
         {
+
                 double r = 100*maxAmplitude;
-		maxAmplitude = 0;
-		return [NSNumber numberWithDouble: r];
+        maxAmplitude = 0;
+             NSLog(@"dbPeakProgress: %f.\n", r);
+        return [NSNumber numberWithDouble: r];
 
         }
 
@@ -164,7 +166,7 @@ class avAudioRec : public AudioRecInterface
 public:
         /* ctor */avAudioRec( NSString* path, NSMutableDictionary *audioSettings)
         {
-        
+
                   NSURL *audioFileURL;
                   {
                         audioFileURL = [NSURL fileURLWithPath: path];
@@ -175,69 +177,77 @@ public:
                                         settings:audioSettings
                                         error:nil];
 
-                  
+
         }
-        
+
         /* dtor */virtual ~avAudioRec()
         {
                 [audioRecorder stop];
         }
-        
+
         void startRecorder(FlutterSoundRecorder* rec)
         {
                   [audioRecorder setDelegate: rec];
                   [audioRecorder record];
                   [audioRecorder setMeteringEnabled: YES];
         }
-        
+
         void stopRecorder()
         {
                 [audioRecorder stop];
         }
-        
+//
         void resumeRecorder()
         {
                 [audioRecorder record];
         }
-        
+
         void pauseRecorder()
         {
                 [audioRecorder pause];
 
         }
-        
+
         NSNumber* recorderProgress()
         {
                 NSNumber* duration =    [NSNumber numberWithLong: (long)(audioRecorder.currentTime * 1000 )];
-
-                
                 [audioRecorder updateMeters];
                 return duration;
         }
         virtual NSNumber* dbPeakProgress()
         {
-                NSNumber* normalizedPeakLevel = [NSNumber numberWithDouble:MIN(pow(10.0, [audioRecorder peakPowerForChannel:0] / 20.0) * 160.0, 160.0)];
-		return normalizedPeakLevel;
+
+           [audioRecorder updateMeters];
+
+
+//            NSNumber* normalizedPeakLevel = [NSNumber numberWithDouble:MAX(0.2, [audioRecorder peakPowerForChannel:0] + 50)/ 2];
+
+
+            NSNumber* normalizedPeakLevel2 = [NSNumber numberWithDouble:MAX(0.2, [audioRecorder averagePowerForChannel:0] + 50)/ 2]; // 0~25
+           [audioRecorder setMeteringEnabled: YES];
+
+        return normalizedPeakLevel2;
 
         }
+
 
 };
 
 
 static bool _isIosEncoderSupported [] =
 {
-     		true, // DEFAULT
-		true, // aacADTS
-		false, // opusOGG
-		true, // opusCAF
-		false, // MP3
-		false, // vorbisOGG
-		false, // pcm16
-		true, // pcm16WAV
-		false, // pcm16AIFF
-		true, // pcm16CAF
-		true, // flac
-		true, // aacMP4
+             true, // DEFAULT
+        true, // aacADTS
+        false, // opusOGG
+        true, // opusCAF
+        false, // MP3
+        false, // vorbisOGG
+        false, // pcm16
+        true, // pcm16WAV
+        false, // pcm16AIFF
+        true, // pcm16CAF
+        true, // flac
+        true, // aacMP4
                 false, // amrNB
                 false, // amrWB
 
@@ -323,6 +333,8 @@ AudioRecInterface* audioRec;
 
 - (void)startRecorder :(FlutterMethodCall*)call result:(FlutterResult)result
 {
+
+
            path = (NSString*)call.arguments[@"path"];
            NSNumber* sampleRateArgs = (NSNumber*)call.arguments[@"sampleRate"];
            NSNumber* numChannelsArgs = (NSNumber*)call.arguments[@"numChannels"];
@@ -362,7 +374,7 @@ AudioRecInterface* audioRec;
                             forKey:AVEncoderBitRateKey];
             }
 
-  
+
           // set volume default to speaker
           UInt32 doChangeDefaultRoute = 1;
           AudioSessionSetProperty(kAudioSessionProperty_OverrideCategoryDefaultToSpeaker, sizeof(doChangeDefaultRoute), &doChangeDefaultRoute);
@@ -375,7 +387,9 @@ AudioRecInterface* audioRec;
                         //audioFileURL = [NSURL fileURLWithPath:[ [self GetDirectoryOfType_FlutterSound: NSCachesDirectory]
                         //stringByAppendingString:defaultExtensions[coder] ]];
           }
-          
+          NSLog(@"init System Audio firsxt: ");
+//            audioRec = new AudioRecorderEngine(coder, path, audioSettings);
+//
           if(formats[coder] == 0)
           {
                 audioRec = new AudioRecorderEngine(coder, path, audioSettings);
@@ -383,16 +397,24 @@ AudioRecInterface* audioRec;
           {
                 audioRec = new avAudioRec( path, audioSettings);
           }
+
           audioRec ->startRecorder(self);
           [self startRecorderTimer];
 
            result(path);
+//    newInstrument = [[NewInstrument alloc] init];
+//
+//    // Add the declared AudioKit instrument(s) to the AKOrchestra which is the environment for all instruments
+//    // More importantly, this sets up the Csound implementation where all the low level code required to set up the audio engine is done (but neatly hidden away)
+//    [AKOrchestra addInstrument:newInstrument];
+//
+//    result(@"C");
 }
 
 
 - (void)stopRecorder:(FlutterResult)result
 {
- 
+
           [self stopRecorderTimer];
           if (audioRec != nil)
           {
@@ -404,6 +426,7 @@ AudioRecInterface* audioRec;
                 audioRec = nil;
           }
           result(path);
+
 }
 
 
@@ -466,8 +489,9 @@ AudioRecInterface* audioRec;
         NSNumber* duration = audioRec ->recorderProgress();
 
         NSNumber * normalizedPeakLevel = audioRec ->dbPeakProgress();
-        
+
         NSDictionary* dico = @{ @"slotNo": [NSNumber numberWithInt: slotNo], @"dbPeakLevel": normalizedPeakLevel, @"duration": duration};
+
         [self invokeMethod:@"updateRecorderProgress" dico: dico];
 }
  

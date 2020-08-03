@@ -15,8 +15,8 @@ Flutter plugin that relates to sound like audio and recorder.
   s.source_files = 'Classes/**/*'
   s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
-
+  s.dependency 'AudioKit', '~> 4.0'
   s.ios.deployment_target = '9.3'
   s.static_framework = true
-  #s.dependency 'mobile-ffmpeg-audio', '4.3.1.LTS'
+
 end

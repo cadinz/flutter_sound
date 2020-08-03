@@ -26,7 +26,6 @@
 extern void FlautoPlayerReg(NSObject<FlutterPluginRegistrar>* registrar);
 //extern NSMutableArray* flautoPlayerSlots;
 
-
 @interface FlautoPlayerManager : FlautoManager
 {
 }
